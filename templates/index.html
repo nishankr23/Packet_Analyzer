@@ -772,13 +772,23 @@
   </section>
   
   <!-- Statistics Modal (Graph Pop-Up) -->
-  <div id="statsModal" class="hidden fixed inset-0 flex items-center justify-center z-50" style="background-color: var(--modal-overlay-bg);">
-    <div class="modal-content p-4 rounded w-11/12 md:w-3/4 lg:w-1/2" style="background-color: var(--modal-bg) !important; color: var(--modal-text-color) !important;">
+  <div id="statsModal"
+       class="hidden fixed inset-0 flex items-center justify-center z-50"
+       style="background-color: var(--modal-overlay-bg);">
+    <!-- Modal container with flex layout and fixed height -->
+    <div class="modal-content p-4 rounded w-11/12 md:w-4/5 lg:w-2/3 flex flex-col"
+         style="background-color: var(--modal-bg) !important; color: var(--modal-text-color) !important; height: 90vh; overflow: hidden;">
       <div class="flex justify-between items-center mb-4">
         <h3 class="text-xl" style="color: var(--modal-text-color) !important;">Capture Statistics</h3>
-        <button onclick="closeStatsModal()" class="text-2xl" style="color: var(--modal-close-color) !important;">&times;</button>
+        <button onclick="closeStatsModal()" class="text-2xl"
+                style="color: var(--modal-close-color) !important;">&times;</button>
       </div>
-      <canvas id="statsChart"></canvas>
+      <!-- Chart container that fills remaining space -->
+      <div class="flex-1" style="position: relative;">
+        <canvas id="statsChart"
+                style="position: absolute; left: 0; top: 0; width: 100%; height: 100%;">
+        </canvas>
+      </div>
     </div>
   </div>
   
@@ -789,94 +799,105 @@
     let capturedCount = 0;
     let statsChart;
     
-    // Protocol color mappings for Chart.js and table row colors
+    // Distinct pastel colors for each protocol:
+    // 1) protocolColorMapping -> for Chart.js slices
+    // 2) protocolColors -> for table row backgrounds
     const protocolColorMapping = {
-      "HTTP": "#dbeafe",
-      "HTTPS": "#bbf7d0",
-      "SSH": "#fecaca",
-      "FTP": "#fef3c7",
-      "DNS": "#e9d5ff",
-      "ARP": "#fbcfe8",
-      "ICMP": "#e5e7eb",
-      "TCP": "#c7d2fe",
-      "UDP": "#a5f3fc",
-      "TLS": "#cffafe",
-      "TLS V1.2": "#cffafe",
-      "POP3": "#fed7aa",
-      "POP3S": "#ffedd5",
-      "IMAP": "#ddd6fe",
-      "IMAPS": "#e0e7ff",
-      "SMTP": "#fef08a",
-      "TELNET": "#fef08a",
-      "LDAP": "#bbf7d0",
-      "LDAPS": "#86efac",
-      "PPTP": "#f9a8d4",
-      "RDP": "#fecaca",
-      "VNC": "#fca5a5",
-      "RTMP": "#a5f3fc",
-      "XMPP": "#c7d2fe",
-      "IRC": "#dbeafe",
-      "NNTP": "#dbeafe",
-      "SNMP": "#e5e7eb",
-      "DHCP": "#ffedd5",
-      "MDNS": "#fbcfe8",
-      "LLMNR": "#ddd6fe",
-      "NBNS": "#d1d5db",
-      "NTP": "#dbeafe",
-      "SIP": "#a5f3fc",
-      "RTP": "#bbf7d0",
-      "RTCP": "#86efac",
-      "COAP": "#ffedd5",
-      "SFLOW": "#c7d2fe",
-      "NETFLOW": "#a5b4fc",
-      "GTP": "#a5f3fc",
-      "RADIUS": "#dbeafe"
+      "HTTP":    "#CCE4FF",
+      "HTTPS":   "#CCFFD9",
+      "SSH":     "#FFCCCC",
+      "FTP":     "#FFF5CC",
+      "DNS":     "#E5CCFF",
+      "ARP":     "#FFCCE5",
+      "ICMP":    "#F2F2F2",
+      "TCP":     "#D9CCFF",
+      "UDP":     "#CCFFFF",
+      "TLS":     "#CCFFF2",
+      "TLS V1.2":"#CCFFFC",
+      "POP3":    "#FFE5CC",
+      "POP3S":   "#FFDEB3",
+      "IMAP":    "#ECCEFF",
+      "IMAPS":   "#E0CCFF",
+      "SMTP":    "#FEF08A",
+      "TELNET":  "#F9FFCC",
+      "LDAP":    "#D1FAE5",
+      "LDAPS":   "#A7F3D0",
+      "PPTP":    "#FFCCE8",
+      "RDP":     "#FFDDDD",
+      "VNC":     "#FFB3B3",
+      "RTMP":    "#B3D1FF",
+      "XMPP":    "#B8CCFF",
+      "IRC":     "#CCE9FF",
+      "NNTP":    "#F3CCFF",
+      "SNMP":    "#EDEDED",
+      "DHCP":    "#FFF0CC",
+      "MDNS":    "#FFB3D9",
+      "LLMNR":   "#EACCFF",
+      "NBNS":    "#EFEFEF",
+      "NTP":     "#CCEFFF",
+      "SIP":     "#B3FFE7",
+      "RTP":     "#B3FFC2",
+      "RTCP":    "#C2FFB3",
+      "COAP":    "#FFF7CC",
+      "SFLOW":   "#CCF5FF",
+      "NETFLOW": "#B3E0FF",
+      "GTP":     "#E0FFCC",
+      "RADIUS":  "#D9FFCC",
+      "IPV4":    "#FFC9CC",
+      "IPV6":    "#FFF0B3",
+      "VLAN":    "#CCFFED",
+      "QUIC":    "#FFDECC"
     };
     
     const protocolColors = {
-      "HTTP": "bg-blue-100 text-black",
-      "HTTPS": "bg-green-100 text-black",
-      "SSH": "bg-red-100 text-black",
-      "FTP": "bg-yellow-100 text-black",
-      "DNS": "bg-purple-100 text-black",
-      "ARP": "bg-pink-100 text-black",
-      "ICMP": "bg-gray-200 text-black",
-      "TCP": "bg-indigo-100 text-black",
-      "UDP": "bg-teal-100 text-black",
-      "TLS": "bg-cyan-100 text-black",
-      "TLS V1.2": "bg-cyan-100 text-black",
-      "POP3": "bg-orange-100 text-black",
-      "POP3S": "bg-orange-200 text-black",
-      "IMAP": "bg-purple-100 text-black",
-      "IMAPS": "bg-purple-200 text-black",
-      "SMTP": "bg-yellow-200 text-black",
-      "TELNET": "bg-yellow-200 text-black",
-      "LDAP": "bg-green-100 text-black",
-      "LDAPS": "bg-green-200 text-black",
-      "PPTP": "bg-pink-100 text-black",
-      "RDP": "bg-red-100 text-black",
-      "VNC": "bg-red-200 text-black",
-      "RTMP": "bg-teal-100 text-black",
-      "XMPP": "bg-indigo-100 text-black",
-      "IRC": "bg-blue-100 text-black",
-      "NNTP": "bg-blue-200 text-black",
-      "SNMP": "bg-gray-200 text-black",
-      "DHCP": "bg-orange-200 text-black",
-      "MDNS": "bg-pink-200 text-black",
-      "LLMNR": "bg-purple-200 text-black",
-      "NBNS": "bg-gray-300 text-black",
-      "NTP": "bg-blue-200 text-black",
-      "SIP": "bg-teal-200 text-black",
-      "RTP": "bg-green-200 text-black",
-      "RTCP": "bg-green-300 text-black",
-      "COAP": "bg-yellow-200 text-black",
-      "SFLOW": "bg-indigo-200 text-black",
-      "NETFLOW": "bg-indigo-300 text-black",
-      "GTP": "bg-teal-200 text-black",
-      "RADIUS": "bg-blue-200 text-black"
+      "HTTP":    "bg-[#CCE4FF] text-black",
+      "HTTPS":   "bg-[#CCFFD9] text-black",
+      "SSH":     "bg-[#FFCCCC] text-black",
+      "FTP":     "bg-[#FFF5CC] text-black",
+      "DNS":     "bg-[#E5CCFF] text-black",
+      "ARP":     "bg-[#FFCCE5] text-black",
+      "ICMP":    "bg-[#F2F2F2] text-black",
+      "TCP":     "bg-[#D9CCFF] text-black",
+      "UDP":     "bg-[#CCFFFF] text-black",
+      "TLS":     "bg-[#CCFFF2] text-black",
+      "TLS V1.2":"bg-[#CCFFFC] text-black",
+      "POP3":    "bg-[#FFE5CC] text-black",
+      "POP3S":   "bg-[#FFDEB3] text-black",
+      "IMAP":    "bg-[#ECCEFF] text-black",
+      "IMAPS":   "bg-[#E0CCFF] text-black",
+      "SMTP":    "bg-[#FEF08A] text-black",
+      "TELNET":  "bg-[#F9FFCC] text-black",
+      "LDAP":    "bg-[#D1FAE5] text-black",
+      "LDAPS":   "bg-[#A7F3D0] text-black",
+      "PPTP":    "bg-[#FFCCE8] text-black",
+      "RDP":     "bg-[#FFDDDD] text-black",
+      "VNC":     "bg-[#FFB3B3] text-black",
+      "RTMP":    "bg-[#B3D1FF] text-black",
+      "XMPP":    "bg-[#B8CCFF] text-black",
+      "IRC":     "bg-[#CCE9FF] text-black",
+      "NNTP":    "bg-[#F3CCFF] text-black",
+      "SNMP":    "bg-[#EDEDED] text-black",
+      "DHCP":    "bg-[#FFF0CC] text-black",
+      "MDNS":    "bg-[#FFB3D9] text-black",
+      "LLMNR":   "bg-[#EACCFF] text-black",
+      "NBNS":    "bg-[#EFEFEF] text-black",
+      "NTP":     "bg-[#CCEFFF] text-black",
+      "SIP":     "bg-[#B3FFE7] text-black",
+      "RTP":     "bg-[#B3FFC2] text-black",
+      "RTCP":    "bg-[#C2FFB3] text-black",
+      "COAP":    "bg-[#FFF7CC] text-black",
+      "SFLOW":   "bg-[#CCF5FF] text-black",
+      "NETFLOW": "bg-[#B3E0FF] text-black",
+      "GTP":     "bg-[#E0FFCC] text-black",
+      "RADIUS":  "bg-[#D9FFCC] text-black",
+      "IPV4":    "bg-[#FFC9CC] text-black",
+      "IPV6":    "bg-[#FFF0B3] text-black",
+      "VLAN":    "bg-[#CCFFED] text-black",
+      "QUIC":    "bg-[#FFDECC] text-black"
     };
     
     function getRowColorClasses(protocol) {
+      // Because we store e.g. "IPV4" in uppercase, let's unify:
       const normalized = protocol.toUpperCase();
       return protocolColors[normalized] ? protocolColors[normalized].split(" ") : ["bg-white", "text-black"];
     }
@@ -1120,8 +1141,15 @@
       list.innerHTML = "";
       for (const proto in protocolColors) {
         const li = document.createElement("li");
+        // We'll create a color swatch div
         const swatch = document.createElement("div");
-        swatch.className = "w-6 h-6 rounded " + protocolColors[proto];
+        // We'll do inline style to ensure it always works:
+        const colorClass = protocolColors[proto].split(" ")[0].replace("bg-[", "").replace("]", "");
+        swatch.style.width = "1.5rem";
+        swatch.style.height = "1.5rem";
+        swatch.style.borderRadius = "0.25rem";
+        swatch.style.backgroundColor = colorClass;
+        // Label text
         const text = document.createElement("span");
         text.textContent = proto;
         li.appendChild(swatch);
@@ -1147,6 +1175,8 @@
           // Retrieve the text color (for borders and legend) from CSS variables
           const rootStyles = getComputedStyle(document.documentElement);
           const textColor = rootStyles.getPropertyValue('--modal-text-color').trim() || 'black';
+          
+          // Build the chart with distinct pastel colors
           statsChart = new Chart(ctx, {
             type: 'pie',
             data: {
@@ -1164,7 +1194,19 @@
             },
             options: {
               responsive: true,
+              maintainAspectRatio: false,
               plugins: {
+                tooltip: {
+                  callbacks: {
+                    label: function(context) {
+                      const label = context.label || '';
+                      const value = context.parsed;
+                      const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                      const percentage = ((value / total) * 100).toFixed(1) + '%';
+                      return `${label}: ${value} (${percentage})`;
+                    }
+                  }
+                },
                 legend: { 
                   position: 'bottom',
                   labels: {
@@ -1188,6 +1230,7 @@
     }
     
     window.onload = function() {
+      // Theme check
       if (localStorage.getItem('theme') === 'dark') {
         document.documentElement.classList.add('dark');
       } else {
@@ -1195,6 +1238,8 @@
       }
       const btn = document.getElementById('themeToggle');
       btn.textContent = document.documentElement.classList.contains('dark') ? "☀" : "🌙";
+      
+      // Color existing rows + build proto scheme
       applyColorsToExistingRows();
       populateProtoScheme();
     };
