@@ -50,7 +50,6 @@
     }
     input:focus, select:focus {
       outline: none;
-      /* Default focus; dark mode inputs will override this */
       box-shadow: 0 0 5px rgba(66,153,225,0.6);
       border-color: #4299e1;
     }
@@ -286,26 +285,27 @@
     .control-panel button.extra:hover {
       background-color: #2d3748;
     }
-    /* Proto-Scheme Button */
+    /* Updated Proto-Scheme Button */
     .proto-scheme {
-      width: 4rem;
-      height: 4rem;
-      color: #fff;
-      display: flex;
+      padding: 0.5rem 1.5rem;
+      font-size: 1rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 9999px; /* Creates a pill-shaped button */
+      background-image: linear-gradient(135deg, #6B46C1, #805AD5);
+      color: #ffffff;
+      display: inline-flex;
       align-items: center;
       justify-content: center;
-      border-radius: 0.25rem;
       cursor: pointer;
-    }
-    html:not(.dark) .proto-scheme {
-      background-color: #6B46C1;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, background-image 0.2s ease;
     }
     html.dark .proto-scheme {
-      background-color: #805AD5;
+      background-image: linear-gradient(135deg, #805AD5, #6B46C1);
     }
     .proto-scheme:hover {
       transform: scale(1.05);
-      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
     }
     /* Proto-Scheme Dropdown */
     #protoSchemeDropdown {
@@ -691,6 +691,45 @@
       border-color: #fff !important;
     }
     /* --- End dark mode overrides --- */
+    
+    /* THEME TOGGLE: half black/white circle with rotation animation, border, and hover */
+    #themeToggle {
+      /* Override existing background color/classes */
+      background: conic-gradient(#000 0deg 180deg, #fff 180deg 360deg) !important;
+      background-color: transparent !important;
+      color: transparent !important;
+      border-radius: 50% !important;
+      font-size: 0 !important;
+      transition: transform 0.5s ease, box-shadow 0.5s ease;
+      border: 2px solid black; /* Black border for light theme */
+    }
+    /* Rotate 180° when .dark is active on <html> and use white border */
+    .dark #themeToggle {
+      transform: rotate(180deg);
+      border: 2px solid white;
+    }
+    /* Hover effect for the theme toggle button */
+    #themeToggle:hover {
+      transform: scale(1.1);
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    }
+    /* In dark mode, keep the rotation and scale up on hover */
+    .dark #themeToggle:hover {
+      transform: rotate(180deg) scale(1.1);
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    }
+    
+    /* Updated Statistics Modal: Remove tinted/blurred background */
+    #statsModal {
+      background-color: transparent;
+    }
+    /* Add border for the Statistics Modal content */
+    #statsModal .modal-content {
+      border: 2px solid black; /* Default border for light theme */
+    }
+    .dark #statsModal .modal-content {
+      border: 2px solid white; /* White border for dark theme */
+    }
   </style>
 </head>
 <body class="bg-white text-black dark:bg-black-900 dark:text-white">
@@ -748,6 +787,26 @@
     <div id="notificationTimeBar" class="notification-time-bar"></div>
   </div>
   
+  <!-- Statistics Modal (Graph Pop-Up) -->
+  <div id="statsModal"
+       class="hidden fixed inset-0 flex items-center justify-center z-50"
+       style="background-color: transparent;">
+    <!-- Modal container with flex layout and fixed height -->
+    <div class="modal-content p-4 rounded w-11/12 md:w-4/5 lg:w-2/3 flex flex-col"
+         style="background-color: var(--modal-bg) !important; color: var(--modal-text-color) !important; height: 90vh; overflow: hidden;">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-xl" style="color: var(--modal-text-color) !important;">Capture Statistics</h3>
+        <button onclick="closeStatsModal()" class="text-2xl"
+                style="color: var(--modal-close-color) !important;">&times;</button>
+      </div>
+      <!-- Chart container that fills remaining space -->
+      <div class="flex-1" style="position: relative;">
+        <canvas id="statsChart"
+                style="position: absolute; left: 0; top: 0; width: 100%; height: 100%;"></canvas>
+      </div>
+    </div>
+  </div>
+  
   <!-- Header -->
   <header class="p-4 bg-gray-800 flex justify-center items-center">
     <h2 class="text-2xl font-bold text-center">Packet Analyzer</h2>
@@ -756,7 +815,10 @@
   <!-- Control Panel Section -->
   <section class="p-4 bg-white-800">
     <div class="control-panel relative">
-      <button id="themeToggle" type="button" onclick="toggleTheme()" class="absolute top-2 right-2 w-10 h-10 bg-gray-600 text-white rounded-full flex items-center justify-center" title="Toggle Dark/Light Mode">
+      <!-- THEME TOGGLE BUTTON (unchanged HTML, new CSS for half-black/white, border, hover) -->
+      <button id="themeToggle" type="button" onclick="toggleTheme()" 
+              class="absolute top-2 right-2 w-10 h-10 bg-gray-600 text-white rounded-full flex items-center justify-center" 
+              title="Toggle Dark/Light Mode">
         🌙
       </button>
       <div class="flex justify-center mb-1 gap-2">
@@ -842,27 +904,6 @@
       </table>
     </div>
   </section>
-  
-  <!-- Statistics Modal (Graph Pop-Up) -->
-  <div id="statsModal"
-       class="hidden fixed inset-0 flex items-center justify-center z-50"
-       style="background-color: var(--modal-overlay-bg);">
-    <!-- Modal container with flex layout and fixed height -->
-    <div class="modal-content p-4 rounded w-11/12 md:w-4/5 lg:w-2/3 flex flex-col"
-         style="background-color: var(--modal-bg) !important; color: var(--modal-text-color) !important; height: 90vh; overflow: hidden;">
-      <div class="flex justify-between items-center mb-4">
-        <h3 class="text-xl" style="color: var(--modal-text-color) !important;">Capture Statistics</h3>
-        <button onclick="closeStatsModal()" class="text-2xl"
-                style="color: var(--modal-close-color) !important;">&times;</button>
-      </div>
-      <!-- Chart container that fills remaining space -->
-      <div class="flex-1" style="position: relative;">
-        <canvas id="statsChart"
-                style="position: absolute; left: 0; top: 0; width: 100%; height: 100%;">
-        </canvas>
-      </div>
-    </div>
-  </div>
   
   <script>
     // Global variables for packet capture and Chart.js
