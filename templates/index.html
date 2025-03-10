@@ -21,9 +21,10 @@
       --modal-text-color: #000000;
       --modal-close-color: #000000;
     }
+    /* Updated dark theme variables */
     .dark {
       --modal-overlay-bg: rgba(26, 32, 44, 0.75);
-      --modal-bg: #2d3748;
+      --modal-bg: #000;  /* modals now have a black background in dark mode */
       --modal-text-color: #ffffff;
       --modal-close-color: #ffffff;
     }
@@ -49,6 +50,7 @@
     }
     input:focus, select:focus {
       outline: none;
+      /* Default focus; dark mode inputs will override this */
       box-shadow: 0 0 5px rgba(66,153,225,0.6);
       border-color: #4299e1;
     }
@@ -349,7 +351,8 @@
       background-color: #fff;
     }
     .dark .table-section {
-      background-color: #1a202c !important;
+      background-color: #000 !important;
+      color: #fff !important;
     }
     .table-container {
       max-height: 500px;
@@ -359,6 +362,9 @@
       border: 4px solid #718096;
       position: relative;
       background-color: #fff !important;
+    }
+    html.dark .table-container {
+      background-color: #000 !important;
     }
     table {
       width: 100%;
@@ -479,6 +485,7 @@
       width: 12px;
       height: 12px;
     }
+    /* Default scrollbars for light theme */
     ::-webkit-scrollbar-track {
       background: #2d3748;
       border-radius: 6px;
@@ -553,7 +560,7 @@
       background-color: #718096;
     }
     html:not(.dark) * {
-      scrollbar-color: #718096 #e2e8f7;
+      scrollbar-color: #718096 #e2e8f7 !important;
     }
     @media (max-width: 1024px) {
       .control-panel, .table-section {
@@ -619,9 +626,74 @@
         max-height: 800px;
       }
     }
+    
+    /* --- Dark mode overrides for requested elements --- */
+    html.dark header {
+      background-color: #000 !important;
+      color: #fff !important;
+    }
+    html.dark .control-panel {
+      background-color: #000 !important;
+      color: #fff !important;
+    }
+    html.dark .table-section {
+      background-color: #000 !important;
+      color: #fff !important;
+    }
+    html.dark .table-container {
+      background-color: #000 !important;
+    }
+    html.dark thead {
+      background-color: #000 !important;
+      color: #fff !important;
+    }
+    html.dark #sidebar {
+      background-color: #000 !important;
+    }
+    html.dark #protoSchemeDropdown {
+      background-color: #000 !important;
+      color: #fff !important;
+      border-color: #fff !important;
+    }
+    html.dark #detailModal .modal-content {
+      background-color: #000 !important;
+      color: #fff !important;
+    }
+    html.dark #detailModal .modal-header {
+      background-color: #000 !important;
+      color: #fff !important;
+    }
+    /* Dark mode scrollbars: track black, thumb white */
+    html.dark ::-webkit-scrollbar-track {
+      background: #000 !important;
+    }
+    html.dark ::-webkit-scrollbar-thumb {
+      background-color: #fff !important;
+    }
+    html.dark * {
+      scrollbar-color: #fff #000 !important;
+    }
+    /* New rules for input hover/focus in dark mode */
+    html.dark .control-panel input,
+    html.dark .control-panel select,
+    html.dark #sidebar input {
+      background-color: #000 !important;
+      color: #fff !important;
+      border: 1px solid #fff !important;
+    }
+    html.dark .control-panel input:hover,
+    html.dark .control-panel select:hover,
+    html.dark #sidebar input:hover,
+    html.dark .control-panel input:focus,
+    html.dark .control-panel select:focus,
+    html.dark #sidebar input:focus {
+      box-shadow: 0 0 5px 2px #fff !important;
+      border-color: #fff !important;
+    }
+    /* --- End dark mode overrides --- */
   </style>
 </head>
-<body class="bg-white text-black dark:bg-gray-900 dark:text-white">
+<body class="bg-white text-black dark:bg-black-900 dark:text-white">
   <!-- Hamburger for mobile -->
   <div id="hamburger" class="lg:hidden" onclick="toggleSidebar()">&#9776;</div>
   
@@ -682,7 +754,7 @@
   </header>
   
   <!-- Control Panel Section -->
-  <section class="p-4 bg-gray-800">
+  <section class="p-4 bg-white-800">
     <div class="control-panel relative">
       <button id="themeToggle" type="button" onclick="toggleTheme()" class="absolute top-2 right-2 w-10 h-10 bg-gray-600 text-white rounded-full flex items-center justify-center" title="Toggle Dark/Light Mode">
         🌙
@@ -696,7 +768,7 @@
       <div class="button-row flex items-center">
         <div class="left-buttons">
           <button id="protoSchemeButton" type="button" class="proto-scheme" onclick="toggleProtoScheme()">
-            Proto Scheme
+            Protocol Scheme
           </button>
         </div>
         <div class="center-buttons flex-1 flex justify-center items-center gap-2">
@@ -897,7 +969,6 @@
     };
     
     function getRowColorClasses(protocol) {
-      // Because we store e.g. "IPV4" in uppercase, let's unify:
       const normalized = protocol.toUpperCase();
       return protocolColors[normalized] ? protocolColors[normalized].split(" ") : ["bg-white", "text-black"];
     }
@@ -1141,9 +1212,8 @@
       list.innerHTML = "";
       for (const proto in protocolColors) {
         const li = document.createElement("li");
-        // We'll create a color swatch div
+        // Create a color swatch
         const swatch = document.createElement("div");
-        // We'll do inline style to ensure it always works:
         const colorClass = protocolColors[proto].split(" ")[0].replace("bg-[", "").replace("]", "");
         swatch.style.width = "1.5rem";
         swatch.style.height = "1.5rem";
@@ -1172,11 +1242,9 @@
           const counts = Object.values(data.protocol_counts);
           if (statsChart) { statsChart.destroy(); }
           const ctx = document.getElementById('statsChart').getContext('2d');
-          // Retrieve the text color (for borders and legend) from CSS variables
           const rootStyles = getComputedStyle(document.documentElement);
           const textColor = rootStyles.getPropertyValue('--modal-text-color').trim() || 'black';
           
-          // Build the chart with distinct pastel colors
           statsChart = new Chart(ctx, {
             type: 'pie',
             data: {
@@ -1229,6 +1297,40 @@
       document.getElementById("statsModal").classList.add("hidden");
     }
     
+    // Global click listener to close pop-ups when clicking outside their content.
+    document.addEventListener('click', function(event) {
+      // For proto scheme dropdown:
+      const protoDropdown = document.getElementById("protoSchemeDropdown");
+      const protoButton = document.getElementById("protoSchemeButton");
+      if (protoDropdown.classList.contains("show") &&
+          !protoDropdown.contains(event.target) &&
+          !protoButton.contains(event.target)) {
+        protoDropdown.classList.remove("show");
+      }
+      
+      // For statistics modal:
+      const statsModal = document.getElementById("statsModal");
+      if (!statsModal.classList.contains("hidden") &&
+          !statsModal.querySelector(".modal-content").contains(event.target)) {
+        closeStatsModal();
+      }
+      
+      // For detail (more info) modal:
+      const detailModal = document.getElementById("detailModal");
+      if (!detailModal.classList.contains("hidden") &&
+          !detailModal.querySelector(".modal-content").contains(event.target)) {
+        closeModal();
+      }
+      
+      // For display filter sidebar:
+      const sidebar = document.getElementById("sidebar");
+      if (sidebar.classList.contains("translate-x-0") &&
+          !sidebar.contains(event.target) &&
+          !event.target.closest('[onclick="toggleSidebar()"]')) {
+        toggleSidebar();
+      }
+    });
+    
     window.onload = function() {
       // Theme check
       if (localStorage.getItem('theme') === 'dark') {
@@ -1239,7 +1341,7 @@
       const btn = document.getElementById('themeToggle');
       btn.textContent = document.documentElement.classList.contains('dark') ? "☀" : "🌙";
       
-      // Color existing rows + build proto scheme
+      // Apply colors to existing rows and build proto scheme list.
       applyColorsToExistingRows();
       populateProtoScheme();
     };
